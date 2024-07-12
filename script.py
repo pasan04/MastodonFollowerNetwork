@@ -13,7 +13,7 @@ Author: Pasan Kamburugamuwa
 
 
 import pandas as pd
-import gzip, os, re
+import gzip, os, re, json
 import yaml
 import logging
 
@@ -23,8 +23,16 @@ df = pd.read_excel("MBFC List.xlsx")
 #Remove the https, http and / from each item.
 MBFC_SET = set(df['actual_URL'])
 
+
 with open('config.yml') as f:
     config = yaml.safe_load(f)
+
+#Base folder to save the extected mbfc-posts
+base_folder = config['BASE_FOLDER']
+
+#Account folder
+account_folder = config['ALL_ACCOUNTS']
+
 
 #loggers
 log_dir = config['LOG_DIR']
@@ -65,6 +73,9 @@ df['cleaned_URL'] = df['actual_URL'].apply(clean_urls)
 # Convert the cleaned URLs to a set
 MBFC_SET = set(df['cleaned_URL'])
 
+# Step 01
+##############################################
+
 # #Iterate through each file in the folder
 for month in config['MONTHS']:
     #Get the month folder
@@ -91,7 +102,7 @@ for month in config['MONTHS']:
                         if included_mbfc:
                             lines_to_write.append(line)
 
-                extracted_data_file_path = os.path.join(month_folder, f"mbfc-posts", f"{make_common(file)}.json")
+                extracted_data_file_path = os.path.join(base_folder, f"mbfc-posts", f"{make_common(file)}.json")
 
                 # Create the directory if they not exist
                 os.makedirs(os.path.dirname(extracted_data_file_path), exist_ok=True)
@@ -99,9 +110,41 @@ for month in config['MONTHS']:
                     f.writelines(lines_to_write)
                 logging.info(f"Successfully extracted MBFC posts from the file - {file_path}")
 
+#Step 02
+##############################################
 
 
+#Get the list extracted MBFC post dir
+mbfc_posts_dir = config['MDFC_POST_DIR']
 
+accounts_folder = os.path.join(base_folder, "accounts")
+os.makedirs(accounts_folder, exist_ok=True)
+
+# Iterate over each file in the specified directory
+for file in os.listdir(config['MDFC_POST_DIR']):
+    post_file = os.path.join(config['MDFC_POST_DIR'], file)
+
+    # Define the output file path
+    extracted_account_file_path = os.path.join(accounts_folder, f"{file}")
+
+    with open(extracted_account_file_path, 'w') as outfile:
+        # Open and read each file
+        with open(post_file) as f:
+            for line in f:
+                try:
+                    # Parse each line as JSON
+                    data = json.loads(line)
+
+                    # Extract the "acct" field
+                    acct = data['account']['acct']
+
+                    # Write the "acct" value to the output file
+                    outfile.write(json.dumps(acct) + '\n')
+                except (json.JSONDecodeError, KeyError, IndexError):
+                    # Handle possible errors in parsing or missing fields
+                    logging.error(f"Error processing line: {line}")
+
+    logging.info(f"Successfully extracted accounts from the file - {post_file}")
 
 
 

@@ -1,4 +1,6 @@
 DATA_DIR : "/Users/pkamburu/MastodonFollowerNetwork/data"
 MONTHS : ['2024-06']
 LOG_DIR: "/Users/pkamburu/MastodonFollowerNetwork/data/log"
-MDFC_POST_DIR = "
+MDFC_POST_DIR : "/Users/pkamburu/MastodonFollowerNetwork/mbfc-posts"
+BASE_FOLDER : "/Users/pkamburu/MastodonFollowerNetwork"
+ALL_ACCOUNTS: "/Users/pkamburu/MastodonFollowerNetwork/users"
