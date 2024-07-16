@@ -3,4 +3,6 @@ MONTHS : ['2024-06']
 LOG_DIR: "/Users/pkamburu/MastodonFollowerNetwork/data/log"
 MDFC_POST_DIR : "/Users/pkamburu/MastodonFollowerNetwork/mbfc-posts"
 BASE_FOLDER : "/Users/pkamburu/MastodonFollowerNetwork"
-ALL_ACCOUNTS: "/Users/pkamburu/MastodonFollowerNetwork/users"
+ACCOUNT_DIR: "/Users/pkamburu/MastodonFollowerNetwork/accounts"
+REMOVED_DUPLICATE_ACCOUNT_DIR: "/Users/pkamburu/MastodonFollowerNetwork/removed_duplicates"
+LIMIT: "100"
