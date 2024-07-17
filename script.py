@@ -91,23 +91,27 @@ for month in config['MONTHS']:
                 logging.info(f"Getting the file to read - {file_path}")
                 with gzip.open(file_path, 'rt') as gzip_file:
                     for line in gzip_file:
-                        included_mbfc = False
-                        #Going through each word of a line
-                        for word in line.split():
-                            if word in MBFC_SET:
-                                included_mbfc = True
-                                break
+                        data = json.loads(line)
+                        if 'content' in data and data['content']:
+                            included_mbfc = False
+                            #Going through each word of a line
+                            # print(data['content'])
+                            words = data['content'].split()
+                            for word in words:
+                                if word in MBFC_SET:
+                                    included_mbfc = True
+                                    break
 
-                        if included_mbfc:
-                            lines_to_write.append(line)
+                            if included_mbfc:
+                                lines_to_write.append(line)
 
-                extracted_data_file_path = os.path.join(base_folder, f"mbfc-posts", f"{make_common(file)}.json")
+                    extracted_data_file_path = os.path.join(base_folder, f"mbfc-posts", f"{make_common(file)}.json")
 
-                # Create the directory if they not exist
-                os.makedirs(os.path.dirname(extracted_data_file_path), exist_ok=True)
-                with open(extracted_data_file_path, 'a') as f:
-                    f.writelines(lines_to_write)
-                logging.info(f"Successfully extracted MBFC posts from the file - {file_path}")
+                    # Create the directory if they not exist
+                    os.makedirs(os.path.dirname(extracted_data_file_path), exist_ok=True)
+                    with open(extracted_data_file_path, 'a') as f:
+                        f.writelines(lines_to_write)
+                    logging.info(f"Successfully extracted MBFC posts from the file - {file_path}")
 
 # Step 02
 # Extract the users from posts and assign the home account id for each post.
@@ -144,7 +148,7 @@ for file in os.listdir(config['MDFC_POST_DIR']):
                             "post_id": data['id'],
                             "post_uri": data['uri'],
                             "account": data['account'],
-                            "home_acc_id": data['account']['id']
+                            "home_acc_id": str(data['account']['id'])
                         }
                     else:
                         # Account lookup API endpoint to get the account id.
@@ -209,13 +213,15 @@ with open(removed_duplicates_accounts_file_path, 'a') as outfile:
                 unique_key = (mastodon_instance_url, home_account_id, post_id)
 
                 # Check if user has 2 or more posts and is not a duplicate
-                if post_counts[unique_key] >= 2 and (mastodon_instance_url, home_account_id) not in unique_accounts:
+                if post_counts[unique_key] >= 1 and (mastodon_instance_url, home_account_id) not in unique_accounts:
                     unique_accounts.add((mastodon_instance_url, home_account_id))
                     data_updated = {
                         "account": data["account"],
                         "home_acc_id": data["home_acc_id"]
                     }
                     outfile.write(json.dumps(data_updated) + '\n')
+
+
 # Step 04
 # Get followers for each account
 ############################################
@@ -249,7 +255,12 @@ def get_all_followers(base_url, account_id, limit=40, max_id=None, since_id=None
             logging.error(f"Failed to retrieve followers: {response.status_code}")
             break
 
-        followers = response.json()
+        try:
+            followers = response.json()
+        except requests.exceptions.JSONDecodeError:
+            logging.error(f"JSON decode error: {response.text}")
+            break
+
         if not followers:
             break
 
@@ -273,8 +284,6 @@ def get_all_followers(base_url, account_id, limit=40, max_id=None, since_id=None
 
     return all_followers
 
-
-
 removed_duplicates_file = os.path.join(removed_duplicates_account_ids_dir, "removed_duplicates_accounts.json")
 # Define the output file path
 account_followers_file_path = os.path.join(accounts_followers_dir, f"account_followers.json")
@@ -289,6 +298,8 @@ with open(account_followers_file_path, 'a') as outfile:
             all_followers = get_all_followers(base_url, home_account_id)
             account_followers = {"followers": all_followers}
             data.update(account_followers)
-            outfile.write(json.dumps(data) + '\n')
+            outfile.writelines(json.dumps(data) + ','+ '\n')
+
+
 
 
